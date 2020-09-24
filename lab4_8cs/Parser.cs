@@ -46,37 +46,37 @@ namespace lab4_8cs
         {
             await SearchInURI(URI, 0);
         }
-        async Task SearchInURI(string uri, int deep)
+        async Task<string> SearchInURI(string uri, int deep)
         {
             string[] hrefs;
             try
             {
                 var response = client.GetAsync(uri).Result;
-                if (!response.IsSuccessStatusCode) return;
+                if (!response.IsSuccessStatusCode) return "";
                 hrefs = GetInfoFromString(await response.Content.ReadAsStringAsync());
             }
             catch (OperationCanceledException e)
             {
                 Console.WriteLine(e.Message);
-                return;
+                return "";
             }
             
-            if (deep + 1 == Deep) return;
-            List<Task> tasks = new List<Task>(); 
+            if (deep + 1 == Deep) return uri;
+            var tasks = new List<Task<string>>(); 
             foreach (var item in hrefs)
             {
-                if (Count >= MaxCount) return;
+                if (Count >= MaxCount) return uri;
 
                 if (completed.Contains(item)) continue;
-                else completed.Add(item);
 
                 tasks.Add(SearchInURI(item[0]=='"'?Domain+item[1..]:item, deep + 1));
                 Count++;
             }
             foreach (var item in tasks)
             {
-                await item;
+                completed.Add(await item);
             }
+            return uri;
         }
         string[] GetInfoFromString(string data)
         {
